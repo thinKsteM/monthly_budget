@@ -1,10 +1,12 @@
-const CACHE = 'app-v1';
+const CACHE = 'app-v2';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/fonts/orbitron-v35.woff2',
+  '/fonts/share-tech-mono-v16.woff2'
 ];
 
 self.addEventListener('install', e => {
@@ -28,5 +30,21 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+
+      return fetch(e.request).then(response => {
+        if (!response || !response.ok) return response;
+
+        const cacheableDestinations = new Set(['style', 'script', 'font', 'image']);
+        if (cacheableDestinations.has(e.request.destination)) {
+          const responseClone = response.clone();
+          caches.open(CACHE).then(cache => cache.put(e.request, responseClone));
+        }
+
+        return response;
+      });
+    })
+  );
 });

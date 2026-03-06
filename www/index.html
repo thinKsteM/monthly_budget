@@ -3,11 +3,38 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>月次収支管理アプリ</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap"
-        rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Orbitron';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('fonts/orbitron-v35.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Orbitron';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url('fonts/orbitron-v35.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Orbitron';
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+            src: url('fonts/orbitron-v35.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Share Tech Mono';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('fonts/share-tech-mono-v16.woff2') format('woff2');
+        }
+
         :root {
             --cp-bg-dark: #1a1b26;
             --cp-bg-panel: #08080c;
@@ -2507,7 +2534,12 @@
     </script>
 
     <script>
-        if ('serviceWorker' in navigator) {
+        const isNativeApp = !!(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === 'function' &&
+            window.Capacitor.isNativePlatform()
+        );
+        if ('serviceWorker' in navigator && !isNativeApp) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(console.error);
             });
