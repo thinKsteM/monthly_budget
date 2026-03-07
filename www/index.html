@@ -128,7 +128,7 @@
 
         .settings-btn {
             position: absolute;
-            top: 50%;
+            top: calc(50% + env(safe-area-inset-top) / 2);
             right: 20px;
             transform: translateY(-50%);
             background: rgba(0, 243, 255, 0.1);
