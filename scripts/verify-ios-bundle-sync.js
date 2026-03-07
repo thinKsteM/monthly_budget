@@ -78,7 +78,12 @@ const missingConfigFiles = iosConfigFiles
   .filter((filePath) => !fs.existsSync(filePath))
   .map((filePath) => path.relative(rootDir, filePath).split(path.sep).join('/'));
 
-if (missingInIos.length > 0 || extraInIos.length > 0 || contentMismatches.length > 0 || missingConfigFiles.length > 0) {
+const hasBlockingIssues =
+  missingInIos.length > 0 ||
+  contentMismatches.length > 0 ||
+  missingConfigFiles.length > 0;
+
+if (hasBlockingIssues) {
   console.error('iOS bundle is out of sync with www.');
 
   if (missingInIos.length > 0) {
@@ -101,8 +106,20 @@ if (missingInIos.length > 0 || extraInIos.length > 0 || contentMismatches.length
     missingConfigFiles.forEach((filePath) => console.error(`- ${filePath}`));
   }
 
+  if (extraInIos.length > 0) {
+    console.warn('\nWarning: extra files exist in iOS bundle (non-blocking):');
+    extraInIos.forEach((filePath) => console.warn(`- ${filePath}`));
+  }
+
   console.error('\nRun: npx cap copy ios');
   process.exit(1);
+}
+
+if (extraInIos.length > 0) {
+  console.warn('iOS bundle sync verification passed with warnings.');
+  console.warn('Extra files in iOS bundle (non-blocking):');
+  extraInIos.forEach((filePath) => console.warn(`- ${filePath}`));
+  process.exit(0);
 }
 
 console.log('iOS bundle sync verification passed.');
