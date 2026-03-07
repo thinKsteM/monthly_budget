@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/verify-offline-bundle.js"
+    "test": "node scripts/verify-offline-bundle.js",
+    "test:ios-sync": "node scripts/verify-ios-bundle-sync.js"
   },
   "keywords": [],
   "author": "",
