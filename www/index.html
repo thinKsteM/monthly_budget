@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>月次収支管理アプリ</title>
     <style>
         @font-face {
@@ -2519,13 +2520,23 @@
             const content = document.querySelector('.content');
             let touchStartX = 0;
             let touchStartY = 0;
+            let startedOnFormControl = false;
+            const swipeIgnoreSelector = 'input, textarea, select, [contenteditable], [role="textbox"]';
 
             content.addEventListener('touchstart', (e) => {
                 touchStartX = e.touches[0].clientX;
                 touchStartY = e.touches[0].clientY;
+                const target = e.target;
+                startedOnFormControl = target instanceof Element
+                    ? Boolean(target.closest(swipeIgnoreSelector))
+                    : false;
             }, { passive: true });
 
             content.addEventListener('touchend', (e) => {
+                if (startedOnFormControl) {
+                    startedOnFormControl = false;
+                    return;
+                }
                 const dx = e.changedTouches[0].clientX - touchStartX;
                 const dy = e.changedTouches[0].clientY - touchStartY;
                 if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
@@ -2539,6 +2550,10 @@
                 if (nextIndex !== currentIndex) {
                     navigateToPage(PAGE_ORDER[nextIndex]);
                 }
+            }, { passive: true });
+
+            content.addEventListener('touchcancel', () => {
+                startedOnFormControl = false;
             }, { passive: true });
         })();
 
