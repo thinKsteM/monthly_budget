@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/verify-offline-bundle.js"
+    "sync:ios": "npx cap copy ios",
+    "test": "node scripts/verify-offline-bundle.js && node scripts/verify-ios-bundle-sync.js"
   },
   "keywords": [],
   "author": "",
