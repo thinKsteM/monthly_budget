@@ -2059,7 +2059,7 @@
 
             listElement.addEventListener('lostpointercapture', function(e) {
                 if (!draggedItem || e.pointerId !== activePointerId) return;
-                finishDrag({ canceled: false });
+                finishDrag({ canceled: true });
             });
         }
 
