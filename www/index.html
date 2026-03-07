@@ -428,6 +428,10 @@
             margin-bottom: 12px;
         }
 
+        body.simple-mode .drag-handle {
+            color: #adb5bd;
+        }
+
         body.simple-mode .expense-item::before,
         body.simple-mode .income-item::before {
             display: none;
@@ -1004,6 +1008,31 @@
             position: relative;
         }
 
+        .drag-handle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            min-width: 28px;
+            min-height: 44px;
+            margin-right: 8px;
+            cursor: grab;
+            color: var(--cp-text-secondary);
+            opacity: 0.5;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+            opacity: 1;
+        }
+        .drag-handle svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
         .income-item::before {
             content: "";
             position: absolute;
@@ -1209,6 +1238,13 @@
                 padding: 10px;
             }
 
+            .drag-handle {
+                width: 24px;
+                min-width: 24px;
+                min-height: 40px;
+                margin-right: 6px;
+            }
+
             .expense-item-actions,
             .income-item-actions {
                 display: flex;
@@ -1235,6 +1271,11 @@
             position: relative;
             z-index: 100;
             border: 1px solid var(--cp-neon-cyan);
+            transition: none;
+        }
+
+        .drag-transition {
+            transition: transform 0.2s ease;
         }
 
         .amount-input-container {
@@ -1874,70 +1915,151 @@
         function enableDragAndDrop(listId, type, renderCallback) {
             const listElement = document.getElementById(listId);
             let draggedItem = null;
-            let touchTimer = null;
-            let startY = 0;
+            let placeholder = null;
             let initialIndex = -1;
+            let activePointerId = null;
+            let startY = 0;
+            let dragStartTop = 0;
 
-            listElement.addEventListener('touchstart', (e) => {
-                const item = e.target.closest('.expense-item, .income-item');
-                // 入力フォームやボタンでのタッチは除外
-                if (!item || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-
-                startY = e.touches[0].clientY;
-
-                // 長押し判定 (500ms)
-                touchTimer = setTimeout(() => {
-                    draggedItem = item;
-                    initialIndex = Array.from(listElement.children).indexOf(item);
-                    item.classList.add('dragging');
-                    // 振動フィードバック (対応デバイスのみ)
-                    if (navigator.vibrate) navigator.vibrate(50);
-                }, 500);
-            }, { passive: false });
-
-            listElement.addEventListener('touchmove', (e) => {
-                if (!draggedItem) {
-                    // 長押し成立前に大きく動かしたらキャンセル
-                    if (touchTimer && Math.abs(e.touches[0].clientY - startY) > 10) {
-                        clearTimeout(touchTimer);
-                        touchTimer = null;
-                    }
-                    return;
-                }
-
-                e.preventDefault(); // スクロール阻止
-                const touch = e.touches[0];
-                const elementAfter = getDragAfterElement(listElement, touch.clientY);
-
-                if (elementAfter == null) {
-                    listElement.appendChild(draggedItem);
-                } else {
-                    listElement.insertBefore(draggedItem, elementAfter);
-                }
-            }, { passive: false });
-
-            listElement.addEventListener('touchend', () => {
-                if (touchTimer) clearTimeout(touchTimer);
+            function finishDrag(opts) {
+                var canceled = opts && opts.canceled;
                 if (!draggedItem) return;
 
+                // ドラッグ中のスタイルを解除
+                draggedItem.style.position = '';
+                draggedItem.style.top = '';
+                draggedItem.style.left = '';
+                draggedItem.style.width = '';
+                draggedItem.style.zIndex = '';
+                draggedItem.style.pointerEvents = '';
                 draggedItem.classList.remove('dragging');
 
-                // データ配列の並び替え
-                updateDataOrder(listElement, type);
+                // プレースホルダーをドラッグ要素に置換
+                if (placeholder && placeholder.parentNode) {
+                    placeholder.parentNode.insertBefore(draggedItem, placeholder);
+                    placeholder.parentNode.removeChild(placeholder);
+                }
+
+                // 他の要素のトランジションクラスを除去
+                Array.from(listElement.children).forEach(function(child) {
+                    child.classList.remove('drag-transition');
+                });
+
+                if (canceled) {
+                    renderCallback();
+                } else {
+                    updateDataOrder(listElement, type);
+                }
 
                 draggedItem = null;
-                touchTimer = null;
+                placeholder = null;
+                initialIndex = -1;
+                activePointerId = null;
+            }
+
+            listElement.addEventListener('pointerdown', function(e) {
+                var handle = e.target.closest('.drag-handle');
+                if (!handle) return;
+
+                var item = handle.closest('.expense-item, .income-item');
+                if (!item) return;
+
+                var rect = item.getBoundingClientRect();
+                var listRect = listElement.getBoundingClientRect();
+
+                draggedItem = item;
+                initialIndex = Array.from(listElement.children).indexOf(item);
+                activePointerId = e.pointerId;
+                startY = e.clientY;
+                dragStartTop = rect.top - listRect.top + listElement.scrollTop;
+
+                // プレースホルダーを作成（元の位置を確保）
+                placeholder = document.createElement('div');
+                placeholder.style.height = rect.height + 'px';
+                placeholder.style.marginBottom = getComputedStyle(item).marginBottom;
+                placeholder.style.opacity = '0';
+                placeholder.style.pointerEvents = 'none';
+                placeholder.className = 'drag-placeholder';
+                item.parentNode.insertBefore(placeholder, item);
+
+                // ドラッグ中の要素を絶対位置に
+                item.style.position = 'absolute';
+                item.style.top = dragStartTop + 'px';
+                item.style.left = '0';
+                item.style.width = rect.width + 'px';
+                item.style.zIndex = '100';
+                item.style.pointerEvents = 'none';
+                item.classList.add('dragging');
+
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                listElement.style.position = 'relative';
+                listElement.setPointerCapture(e.pointerId);
+                e.preventDefault();
             });
 
-            // キャンセル関連
-            listElement.addEventListener('touchcancel', () => {
-                if (touchTimer) clearTimeout(touchTimer);
-                if (draggedItem) {
-                    draggedItem.classList.remove('dragging');
-                    draggedItem = null;
-                    // 元に戻す処理が必要なら追加（今回は簡略化のため現状維持で再描画が安全かも）
-                    renderCallback();
+            listElement.addEventListener('pointermove', function(e) {
+                if (!draggedItem || e.pointerId !== activePointerId) return;
+
+                e.preventDefault();
+
+                // ドラッグ要素をポインタに追従
+                var deltaY = e.clientY - startY;
+                draggedItem.style.top = (dragStartTop + deltaY) + 'px';
+
+                // プレースホルダーの移動先を判定
+                var siblings = Array.from(listElement.querySelectorAll(
+                    '.expense-item:not(.dragging), .income-item:not(.dragging), .drag-placeholder'
+                ));
+
+                var elementAfter = null;
+                for (var i = 0; i < siblings.length; i++) {
+                    var sib = siblings[i];
+                    if (sib === placeholder) continue;
+                    var box = sib.getBoundingClientRect();
+                    var midY = box.top + box.height / 2;
+                    if (e.clientY < midY) {
+                        elementAfter = sib;
+                        break;
+                    }
                 }
+
+                // プレースホルダーを移動（他の要素がスライドする）
+                if (elementAfter == null) {
+                    if (placeholder.nextSibling !== null) {
+                        // 他の要素にトランジションを付与
+                        Array.from(listElement.children).forEach(function(child) {
+                            if (child !== draggedItem && child !== placeholder) {
+                                child.classList.add('drag-transition');
+                            }
+                        });
+                        listElement.appendChild(placeholder);
+                        listElement.appendChild(draggedItem);
+                    }
+                } else if (elementAfter !== placeholder && elementAfter !== placeholder.nextSibling) {
+                    Array.from(listElement.children).forEach(function(child) {
+                        if (child !== draggedItem && child !== placeholder) {
+                            child.classList.add('drag-transition');
+                        }
+                    });
+                    listElement.insertBefore(placeholder, elementAfter);
+                    listElement.insertBefore(draggedItem, placeholder);
+                }
+            });
+
+            listElement.addEventListener('pointerup', function(e) {
+                if (!draggedItem || e.pointerId !== activePointerId) return;
+                finishDrag({ canceled: false });
+            });
+
+            listElement.addEventListener('pointercancel', function(e) {
+                if (!draggedItem || e.pointerId !== activePointerId) return;
+                finishDrag({ canceled: true });
+            });
+
+            listElement.addEventListener('lostpointercapture', function(e) {
+                if (!draggedItem || e.pointerId !== activePointerId) return;
+                finishDrag({ canceled: false });
             });
         }
 
@@ -2077,6 +2199,7 @@
             incomeList.innerHTML = incomeData.map(income => {
                 const isInactive = !income.active;
                 return '<div class="income-item ' + (isInactive ? 'inactive' : '') + '" data-id="' + income.id + '">' +
+                    '<div class="drag-handle"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></div>' +
                     '<div class="income-item-info">' +
                     '<div class="income-item-name">' +
                     '<span class="name-display" onclick="toggleEditIncomeName(\'' + income.id + '\')">' + escapeHtml(income.name) + '</span>' +
@@ -2335,6 +2458,7 @@
             expenseList.innerHTML = targetData.map(expense => {
                 const isCompleted = !expense.active;
                 return '<div class="expense-item ' + (isCompleted ? 'completed' : '') + '" data-id="' + expense.id + '">' +
+                    '<div class="drag-handle"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></div>' +
                     '<div class="expense-item-info">' +
                     '<div class="expense-item-name">' +
                     '<span class="name-display" onclick="toggleEditExpenseName(\'' + expense.id + '\')">' + escapeHtml(expense.name) + '</span>' +
