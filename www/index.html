@@ -1794,13 +1794,13 @@
                             <div class="amount-input-container">
                                 <div class="input-relative">
                                     <input type="number" id="income-amount" placeholder="0" min="0">
-                                    <button class="btn-clear-input"
+                                    <button type="button" class="btn-clear-input"
                                         onclick="clearInputAmount('income-amount')">×</button>
                                 </div>
                                 <div class="amount-helper-buttons">
-                                    <button class="btn-amount-add"
+                                    <button type="button" class="btn-amount-add"
                                         onclick="addAmountToInput('income-amount', 1000)">+1000</button>
-                                    <button class="btn-amount-add"
+                                    <button type="button" class="btn-amount-add"
                                         onclick="addAmountToInput('income-amount', 100)">+100</button>
                                 </div>
                             </div>
@@ -1834,13 +1834,13 @@
                             <div class="amount-input-container">
                                 <div class="input-relative">
                                     <input type="number" id="expense-amount" placeholder="0" min="0">
-                                    <button class="btn-clear-input"
+                                    <button type="button" class="btn-clear-input"
                                         onclick="clearInputAmount('expense-amount')">×</button>
                                 </div>
                                 <div class="amount-helper-buttons">
-                                    <button class="btn-amount-add"
+                                    <button type="button" class="btn-amount-add"
                                         onclick="addAmountToInput('expense-amount', 1000)">+1000</button>
-                                    <button class="btn-amount-add"
+                                    <button type="button" class="btn-amount-add"
                                         onclick="addAmountToInput('expense-amount', 100)">+100</button>
                                 </div>
                             </div>
@@ -2792,13 +2792,11 @@
             const input = document.getElementById(inputId);
             const currentValue = Number(input.value) || 0;
             input.value = currentValue + amount;
-            input.focus();
         }
 
         function clearInputAmount(inputId) {
             const input = document.getElementById(inputId);
             input.value = '';
-            input.focus();
         }
 
         function clearInlineInput(btn) {
